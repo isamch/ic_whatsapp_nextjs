@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  password     String
+  role         String   @default("user") // "user" | "admin"
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  whatsappSession  WhatsappSession?
+  categories       Category[]
+  contactLists     ContactList[]
+  templates        Template[]
+  campaigns        Campaign[]
+  notifications    Notification[]
+  refreshTokens    RefreshToken[]
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WhatsappSession {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  status    String   @default("disconnected") // "connected" | "disconnected" | "pending"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  userId    Int
+  createdAt DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactLists ContactList[]
+}
+
+model ContactList {
+  id         Int      @id @default(autoincrement())
+  name       String
+  userId     Int
+  categoryId Int
+  createdAt  DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  contacts  Contact[]
+  campaigns Campaign[]
+}
+
+model Contact {
+  id            Int      @id @default(autoincrement())
+  name          String
+  phone         String
+  notes         String?
+  isValid       Boolean? // null = not checked, true = valid, false = invalid
+  contactListId Int
+  createdAt     DateTime @default(now())
+
+  contactList  ContactList   @relation(fields: [contactListId], references: [id], onDelete: Cascade)
+  campaignLogs CampaignLog[]
+}
+
+model Template {
+  id        Int      @id @default(autoincrement())
+  name      String
+  body      String
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns Campaign[]
+}
+
+model Campaign {
+  id            Int      @id @default(autoincrement())
+  name          String
+  status        String   @default("draft") // "draft" | "running" | "paused" | "completed" | "stopped"
+  userId        Int
+  templateId    Int
+  contactListId Int
+  scheduledAt   DateTime?
+  sentCount     Int      @default(0)
+  failedCount   Int      @default(0)
+  totalCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template     Template      @relation(fields: [templateId], references: [id])
+  contactList  ContactList   @relation(fields: [contactListId], references: [id])
+  logs         CampaignLog[]
+}
+
+model CampaignLog {
+  id         Int      @id @default(autoincrement())
+  campaignId Int
+  contactId  Int
+  status     String   // "sent" | "failed"
+  error      String?
+  sentAt     DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

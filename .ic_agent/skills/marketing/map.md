@@ -1,0 +1,7 @@
+# Marketing Skills Map
+
+> Read this file first. Load the specific SKILL.md only when needed.
+
+| Skill | When to use | Path |
+|-------|-------------|------|
+| *(no skills installed yet)* | Add marketing skills here when needed | — |

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "#utils/*":       ["./src/utils/*"],
+      "#templates/*":   ["./src/templates/*"],
+      "#permissions/*": ["./src/permissions/*"],
+      "#config/*":      ["./src/config/*"],
+      "#controllers/*": ["./src/controllers/*"],
+      "#services/*":    ["./src/services/*"],
+      "#models/*":      ["./src/models/*"],
+      "#middlewares/*": ["./src/middlewares/*"],
+      "#validations/*": ["./src/validations/*"],
+      "#routes/*":      ["./src/routes/*"]
+    }
+  }
+}
