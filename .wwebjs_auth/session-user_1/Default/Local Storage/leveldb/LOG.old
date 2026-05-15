@@ -1,0 +1,6 @@
+2026/05/15-23:29:37.600 5504 Reusing MANIFEST C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/15-23:29:37.621 5504 Recovering log #3
+2026/05/15-23:29:37.636 5504 Reusing old log C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\Local Storage\leveldb/000003.log 
+2026/05/15-23:31:39.348 5454 Level-0 table #5: started
+2026/05/15-23:31:39.375 5454 Level-0 table #5: 21035 bytes OK
+2026/05/15-23:31:39.380 5454 Delete type=0 #3
