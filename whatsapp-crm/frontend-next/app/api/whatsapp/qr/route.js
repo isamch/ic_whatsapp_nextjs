@@ -5,7 +5,7 @@ import QRCode from 'qrcode'
 
 export const GET = withAuth(async (req) => {
   const qr = getQR(req.user.id)
-  if (!qr) return error('QR not available', 404)
+  if (!qr) return ok({ qr: null })
   const qrImage = await QRCode.toDataURL(qr)
   return ok({ qr: qrImage })
 })

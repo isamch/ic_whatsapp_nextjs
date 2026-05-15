@@ -1,13 +1,18 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { campaigns } from '@/lib/db/schema'
+import { eq, and, inArray } from 'drizzle-orm'
 import { withAuth } from '@/lib/withAuth'
 import { ok, error } from '@/lib/response'
 
 export const POST = withAuth(async (req, { params }) => {
   const { id } = await params
-  const updated = await prisma.campaign.updateMany({
-    where: { id: Number(id), userId: req.user.id, status: { in: ['running', 'paused'] } },
-    data: { status: 'stopped' }
-  })
-  if (!updated.count) return error('Cannot stop this campaign', 400)
+  const res = await db.update(campaigns)
+    .set({ status: 'stopped' })
+    .where(and(
+      eq(campaigns.id, Number(id)), 
+      eq(campaigns.userId, req.user.id),
+      inArray(campaigns.status, ['running', 'paused'])
+    ))
+  
   return ok({ message: 'Stopped' })
 })

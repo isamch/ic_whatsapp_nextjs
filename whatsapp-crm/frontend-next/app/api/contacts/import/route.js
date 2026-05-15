@@ -1,4 +1,5 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { contacts as contactsTable } from '@/lib/db/schema'
 import { withAuth } from '@/lib/withAuth'
 import { ok, error } from '@/lib/response'
 
@@ -12,12 +13,14 @@ export const POST = withAuth(async (req) => {
   const text  = await file.text()
   const lines = text.trim().split('\n').slice(1) // skip header
 
-  const contacts = lines.map(line => {
+  const data = lines.map(line => {
     const [name, phone, notes] = line.split(',').map(v => v?.trim())
-    return { name, phone, notes: notes || null, contactListId: Number(listId) }
+    return { name, phone, notes: notes || null, contactListId: Number(listId), isValid: null }
   }).filter(c => c.name && c.phone)
 
-  await prisma.contact.createMany({ data: contacts, skipDuplicates: true })
+  if (data.length > 0) {
+    await db.insert(contactsTable).values(data)
+  }
 
-  return ok({ imported: contacts.length })
+  return ok({ imported: data.length })
 })

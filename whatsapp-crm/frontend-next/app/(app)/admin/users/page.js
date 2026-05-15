@@ -98,9 +98,9 @@ function CreateUserForm({ form, setForm, onSubmit, saving, onClose }) {
         <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Role</label>
         <div className="grid grid-cols-2 gap-3">
           {['user', 'admin'].map(role => (
-            <button key={role} type="button" onClick={() => setForm(p => ({ ...p, roles: [role] }))}
+            <button key={role} type="button" onClick={() => setForm(p => ({ ...p, role }))}
               className={`py-2.5 rounded-lg border text-sm font-medium transition-colors cursor-pointer flex items-center justify-center gap-2 ${
-                form.roles[0] === role
+                form.role === role
                   ? role === 'admin' ? 'bg-purple-50 border-purple-300 text-purple-700' : 'bg-gray-900 border-gray-900 text-white'
                   : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
               }`}>
@@ -129,7 +129,7 @@ export default function AdminUsersPage() {
   const [createModal, setCreateModal] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [saving, setSaving]           = useState(false)
-  const [form, setForm]               = useState({ name: '', email: '', password: '', roles: ['user'] })
+  const [form, setForm]               = useState({ name: '', email: '', password: '', role: 'user' })
   const { showAlert } = useAlert()
   const { user: currentUser } = useApp()
 
@@ -162,16 +162,16 @@ export default function AdminUsersPage() {
 
   const handleToggleStatus = async (user) => {
     try {
-      await toggleStatus(user._id)
-      setUsers(prev => prev.map(u => u._id === user._id ? { ...u, isActive: !u.isActive } : u))
+      await toggleStatus(user.id)
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isActive: !u.isActive } : u))
       showAlert(`User ${user.isActive ? 'deactivated' : 'activated'}`, 'success')
     } catch { showAlert('Failed to update status', 'error') }
   }
 
   const handleDelete = async () => {
     try {
-      await deleteUser(deleteTarget._id)
-      setUsers(prev => prev.filter(u => u._id !== deleteTarget._id))
+      await deleteUser(deleteTarget.id)
+      setUsers(prev => prev.filter(u => u.id !== deleteTarget.id))
       showAlert('User deleted', 'success')
     } catch { showAlert('Failed to delete user', 'error') }
     finally { setDeleteTarget(null) }
@@ -211,7 +211,7 @@ export default function AdminUsersPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.map(user => (
-                  <tr key={user._id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 flex-shrink-0">
@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {user.roles?.includes('admin') ? (
+                      {user.role === 'admin' ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
                           <ShieldIcon className="w-3 h-3 mr-1" /> Admin
                         </span>
@@ -246,11 +246,11 @@ export default function AdminUsersPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={() => handleToggleStatus(user)}
                           title={user.isActive ? 'Deactivate' : 'Activate'}
-                          disabled={user._id === currentUser?._id}
+                          disabled={user.id === currentUser?.id}
                           className={`p-1.5 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${user.isActive ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}>
                           <PowerIcon className="w-4 h-4" />
                         </button>
-                        {!user.roles?.includes('admin') && (
+                        {user.role !== 'admin' && (
                           <button onClick={() => setDeleteTarget(user)}
                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer">
                             <Trash2Icon className="w-4 h-4" />

@@ -112,6 +112,11 @@ export default function DashboardPage() {
                 <span className="flex h-2.5 w-2.5 bg-whatsapp rounded-full mr-2 animate-pulse"></span>
                 <span className="text-sm text-gray-600">Connected</span>
               </div>
+            ) : sessionStatus === 'connecting' ? (
+              <div className="flex items-center mt-1">
+                <span className="flex h-2.5 w-2.5 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                <span className="text-sm text-gray-600">Connecting...</span>
+              </div>
             ) : (
               <div className="flex items-center mt-1">
                 <span className="flex h-2.5 w-2.5 bg-red-500 rounded-full mr-2"></span>
@@ -172,7 +177,7 @@ export default function DashboardPage() {
                 <div className="text-center py-6 text-gray-400 text-sm">No campaigns yet</div>
               ) : (
                 stats?.recentCampaigns?.map(campaign => (
-                  <div key={campaign._id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={campaign.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex items-center">
                       <div className={`w-2 h-2 rounded-full mr-3 ${campaign.status === 'running' ? 'bg-whatsapp animate-pulse' :
                           campaign.status === 'completed' ? 'bg-gray-400' : 'bg-amber-500'
@@ -240,7 +245,7 @@ export default function DashboardPage() {
               {qrLoading && !qrImage ? (
                 <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-400">
                   <Loader2Icon className="w-10 h-10 animate-spin mb-3" />
-                  <span className="text-sm">Generating QR...</span>
+                  <span className="text-sm">Initializing browser...</span>
                 </div>
               ) : qrImage ? (
                 <img src={qrImage} alt="WhatsApp QR Code" className="w-48 h-48" />
@@ -250,6 +255,20 @@ export default function DashboardPage() {
                   <span className="text-sm">Waiting for QR...</span>
                 </div>
               )}
+            </div>
+
+            <div className="flex flex-col gap-3 max-w-xs mx-auto">
+              <button 
+                onClick={async () => {
+                  setQrImage(null)
+                  setQrLoading(true)
+                  await handleDisconnect()
+                  await handleConnect()
+                }}
+                className="text-sm text-whatsapp hover:underline font-medium cursor-pointer"
+              >
+                QR not appearing? Reset Connection
+              </button>
             </div>
 
             <p className="text-xs text-gray-400 mb-6">QR code refreshes automatically every 30 seconds</p>

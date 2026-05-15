@@ -10,7 +10,7 @@ import { useApp } from '@/context/AppContext'
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboardIcon, href: '/dashboard' },
-  { id: 'conversations', label: 'Conversations', icon: MessageSquareIcon, href: '/conversations' },
+  { id: 'wh-contacts', label: 'WhatsApp Contacts', icon: SmartphoneIcon, href: '/wh-contacts' },
   { id: 'contacts', label: 'Contacts', icon: UsersIcon, href: '/contacts' },
   { id: 'templates', label: 'Templates', icon: BookOpenIcon, href: '/templates' },
   { id: 'campaigns', label: 'Campaigns', icon: SendIcon, href: '/campaigns' },
@@ -19,6 +19,7 @@ const navItems = [
 
 const adminItems = [
   { id: 'admin-users', label: 'Users', icon: ShieldIcon, href: '/admin/users' },
+  { id: 'admin-wh-contacts', label: 'All WH Contacts', icon: SmartphoneIcon, href: '/admin/wh-contacts' },
   { id: 'admin-notifications', label: 'Send Notification', icon: BellIcon, href: '/admin/notifications' },
 ]
 
@@ -26,7 +27,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, sessionStatus, unreadConversations, unreadNotifications } = useApp()
-  const currentUser = user || { name: '', email: '', roles: [] }
+  const currentUser = user || { name: '', email: '', role: 'user' }
 
   const isActive = (href) => {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -36,7 +37,7 @@ export default function Sidebar() {
   const renderNavItem = (item) => {
     const active = isActive(item.href)
     const Icon = item.icon
-    const badge = item.href === '/conversations' ? unreadConversations : item.href === '/notifications' ? unreadNotifications : 0
+    const badge = item.href === '/notifications' ? unreadNotifications : 0
 
     return (
       <button
@@ -68,7 +69,7 @@ export default function Sidebar() {
 
       <div className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
         <div className="space-y-1">{navItems.map(renderNavItem)}</div>
-        {currentUser.roles?.includes('admin') && (
+        {currentUser.role === 'admin' && (
           <div className="mt-8">
             <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Administration

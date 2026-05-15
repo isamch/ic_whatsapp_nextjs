@@ -12,7 +12,7 @@ import {
   getCategories, createCategory, deleteCategory,
   getLists, createList, deleteList,
   getContacts, createContact, updateContact, deleteContact,
-  validateContacts, clearInvalid, importContacts,
+  validateContacts, clearInvalid, importContacts, syncContacts,
 } from '@/lib/contacts'
 import { validateCreateContact } from '@/lib/validations/contact/createContact.validation'
 import { validateUpdateContact } from '@/lib/validations/contact/updateContact.validation'
@@ -73,13 +73,13 @@ export default function ContactsPage() {
 
   // ── load categories + all lists once
   useEffect(() => {
-    Promise.all([getCategories(), getLists()])
+      Promise.all([getCategories(), getLists()])
       .then(([catRes, listRes]) => {
         const cats = catRes.data?.categories || []
         const ls = listRes.data?.lists || []
         setCategories(cats)
         setLists(ls)
-        if (cats.length) setExpanded({ [cats[0]._id]: true })
+        if (cats.length) setExpanded({ [cats[0].id]: true })
         if (ls.length) setSelectedList(ls[0])
       })
       .catch(() => showAlert('Failed to load data', 'error'))
@@ -90,16 +90,16 @@ export default function ContactsPage() {
   useEffect(() => {
     if (!selectedList) return
     setContactsLoading(true)
-    getContacts(selectedList._id, 1)
-      .then(res => setContacts(res.data?.data || []))
+    getContacts(selectedList.id, 1, 5000) // Using a large limit to load all
+      .then(res => setContacts(res.data?.contacts || []))
       .catch(() => showAlert('Failed to load contacts', 'error'))
       .finally(() => setContactsLoading(false))
   }, [selectedList])
 
   const reloadContacts = useCallback(() => {
     if (!selectedList) return
-    getContacts(selectedList._id, 1)
-      .then(res => setContacts(res.data?.data || []))
+    getContacts(selectedList.id, 1, 5000)
+      .then(res => setContacts(res.data?.contacts || []))
       .catch(() => { })
   }, [selectedList])
 
@@ -113,9 +113,9 @@ export default function ContactsPage() {
     (c.phone || '').includes(search)
   )
 
-  const validCount = contacts.filter(c => c.validationStatus === 'valid').length
-  const invalidCount = contacts.filter(c => c.validationStatus === 'invalid').length
-  const unknownCount = contacts.filter(c => c.validationStatus === 'unknown' || c.validationStatus === 'pending').length
+  const validCount = contacts.filter(c => c.isValid === true).length
+  const invalidCount = contacts.filter(c => c.isValid === false).length
+  const unknownCount = contacts.filter(c => c.isValid === null || c.isValid === undefined).length
 
   // ── handlers
   const handleAddCategory = async () => {
@@ -155,7 +155,7 @@ export default function ContactsPage() {
     // if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
 
     try {
-      const res = await createContact({ ...newContact, listId: selectedList._id })
+      const res = await createContact({ ...newContact, contactListId: selectedList.id })
       setContacts(p => [...p, res.data.contact])
       setNewContact({ name: '', phone: '', notes: '' })
       setShowAddContact(false)
@@ -170,8 +170,8 @@ export default function ContactsPage() {
     if (Object.keys(errs).length) { setEditErrors(errs); return }
     setEditErrors({})
     try {
-      const res = await updateContact(showEditContact._id, editData)
-      setContacts(p => p.map(c => c._id === showEditContact._id ? res.data.contact : c))
+      const res = await updateContact(showEditContact.id, editData)
+      setContacts(p => p.map(c => c.id === showEditContact.id ? res.data.contact : c))
       setShowEditContact(null)
       showAlert('Contact updated', 'success')
     } catch { showAlert('Failed to update contact', 'error') }
@@ -184,7 +184,7 @@ export default function ContactsPage() {
       onConfirm: async () => {
         try {
           await deleteContact(id)
-          setContacts(p => p.filter(c => c._id !== id))
+          setContacts(p => p.filter(c => c.id !== id))
           showAlert('Contact deleted', 'success')
           reloadLists()
         } catch { showAlert('Failed to delete contact', 'error') }
@@ -199,7 +199,7 @@ export default function ContactsPage() {
       onConfirm: async () => {
         try {
           await deleteCategory(id)
-          setCategories(p => p.filter(c => c._id !== id))
+          setCategories(p => p.filter(c => c.id !== id))
           setLists(p => p.filter(l => l.categoryId !== id))
           if (selectedList?.categoryId === id) setSelectedList(null)
           showAlert('Category deleted', 'success')
@@ -215,8 +215,8 @@ export default function ContactsPage() {
       onConfirm: async () => {
         try {
           await deleteList(id)
-          setLists(p => p.filter(l => l._id !== id))
-          if (selectedList?._id === id) setSelectedList(null)
+          setLists(p => p.filter(l => l.id !== id))
+          if (selectedList?.id === id) setSelectedList(null)
           showAlert('List deleted', 'success')
         } catch { showAlert('Failed to delete list', 'error') }
       },
@@ -226,8 +226,8 @@ export default function ContactsPage() {
   const handleImport = async () => {
     if (!csvFile || !selectedList) return
     try {
-      const data = await importContacts(selectedList._id, csvFile)
-      showAlert(`Imported ${data.data?.imported || 0} contacts`, 'success')
+      const res = await importContacts(selectedList.id, csvFile)
+      showAlert(`Imported ${res.data?.imported || 0} contacts`, 'success')
       setCsvFile(null)
       setShowImport(false)
       reloadContacts()
@@ -239,8 +239,11 @@ export default function ContactsPage() {
     if (!selectedList) return
     setValidating(true)
     try {
-      const res = await validateContacts(selectedList._id)
-      showAlert(`Validated: ${res.data?.valid} valid, ${res.data?.invalid} invalid`, 'success')
+      const res = await validateContacts(selectedList.id)
+      const results = res.data || []
+      const valid = results.filter(r => r.isValid).length
+      const invalid = results.length - valid
+      showAlert(`Validated: ${valid} valid, ${invalid} invalid`, 'success')
       reloadContacts()
     } catch { showAlert('Validation failed — make sure WhatsApp is connected', 'error') }
     finally { setValidating(false) }
@@ -255,7 +258,7 @@ export default function ContactsPage() {
       onConfirm: async () => {
         setClearing(true)
         try {
-          const res = await clearInvalid(selectedList._id)
+          const res = await clearInvalid(selectedList.id)
           showAlert(`Deleted ${res.data?.deleted} invalid contacts`, 'success')
           reloadContacts()
           reloadLists()
@@ -265,7 +268,7 @@ export default function ContactsPage() {
     })
   }
 
-  const catForList = (list) => categories.find(c => c._id === list?.categoryId)
+  const catForList = (list) => categories.find(c => c.id === list?.categoryId)
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center h-full">
@@ -290,17 +293,17 @@ export default function ContactsPage() {
             {categories.length === 0 && (
               <p className="text-xs text-gray-400 text-center py-6">No categories yet</p>
             )}
-            {categories.map(cat => {
-              const isExpanded = expanded[cat._id]
-              const catLists = lists.filter(l => l.categoryId === cat._id)
+            {categories.filter(c => c.name !== 'WhatsApp').map(cat => {
+              const isExpanded = expanded[cat.id]
+              const catLists = (lists || []).filter(l => l && l.categoryId === cat.id)
               return (
-                <div key={cat._id} className="mb-2">
+                <div key={cat.id} className="mb-2">
                   <div className="flex items-center group">
-                    <button onClick={() => setExpanded(p => ({ ...p, [cat._id]: !p[cat._id] }))} className="flex-1 flex items-center px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors cursor-pointer">
+                    <button onClick={() => setExpanded(p => ({ ...p, [cat.id]: !p[cat.id] }))} className="flex-1 flex items-center px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors cursor-pointer">
                       {isExpanded ? <ChevronDownIcon className="w-4 h-4 mr-1 text-gray-400" /> : <ChevronRightIcon className="w-4 h-4 mr-1 text-gray-400" />}
                       {cat.name}
                     </button>
-                    <button onClick={() => handleDeleteCategory(cat._id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer">
+                    <button onClick={() => handleDeleteCategory(cat.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer">
                       <Trash2Icon className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -308,19 +311,19 @@ export default function ContactsPage() {
                   {isExpanded && (
                     <div className="mt-1 ml-5 space-y-1 border-l border-gray-200 pl-2">
                       {catLists.map(list => (
-                        <div key={list._id} className="flex items-center group/list">
-                          <button onClick={() => setSelectedList(list)} className={`flex-1 flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${selectedList?._id === list._id ? 'bg-green-50 text-whatsapp font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <div key={list.id} className="flex items-center group/list">
+                          <button onClick={() => setSelectedList(list)} className={`flex-1 flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${selectedList?.id === list.id ? 'bg-green-50 text-whatsapp font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <span className="truncate pr-2">{list.name}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${selectedList?._id === list._id ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${selectedList?.id === list.id ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                               {list.contactCount || 0}
                             </span>
                           </button>
-                          <button onClick={() => handleDeleteList(list._id)} className="opacity-0 group-hover/list:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer">
+                          <button onClick={() => handleDeleteList(list.id)} className="opacity-0 group-hover/list:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer">
                             <Trash2Icon className="w-3 h-3" />
                           </button>
                         </div>
                       ))}
-                      <button onClick={() => { setAddListCatId(cat._id); setShowAddList(true) }} className="w-full flex items-center px-3 py-1.5 text-xs text-gray-400 hover:text-whatsapp transition-colors cursor-pointer">
+                      <button onClick={() => { setAddListCatId(cat.id); setShowAddList(true) }} className="w-full flex items-center px-3 py-1.5 text-xs text-gray-400 hover:text-whatsapp transition-colors cursor-pointer">
                         <PlusIcon className="w-3 h-3 mr-1" /> Add List
                       </button>
                     </div>
@@ -407,16 +410,18 @@ export default function ContactsPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {filtered.map(contact => (
-                            <tr key={contact._id} className="hover:bg-gray-50 transition-colors">
+                            <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-6 py-4 text-sm font-medium text-gray-900">{contact.name || '—'}</td>
                               <td className="px-6 py-4 text-sm text-gray-600 font-mono">{contact.phone}</td>
-                              <td className="px-6 py-4"><Badge status={contact.validationStatus} /></td>
+                              <td className="px-6 py-4">
+                                <Badge status={contact.isValid === null ? 'unknown' : (contact.isValid ? 'valid' : 'invalid')} />
+                              </td>
                               <td className="px-6 py-4 text-sm text-gray-500 truncate max-w-[200px]">{contact.notes || '—'}</td>
                               <td className="px-6 py-4 text-right text-sm">
                                 <button onClick={() => { setShowEditContact(contact); setEditData({ name: contact.name || '', phone: contact.phone, notes: contact.notes || '' }) }} className="text-gray-400 hover:text-blue-600 mx-2 transition-colors cursor-pointer">
                                   <EditIcon className="w-4 h-4" />
                                 </button>
-                                <button onClick={() => handleDeleteContact(contact._id)} className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer">
+                                <button onClick={() => handleDeleteContact(contact.id)} className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer">
                                   <Trash2Icon className="w-4 h-4" />
                                 </button>
                               </td>

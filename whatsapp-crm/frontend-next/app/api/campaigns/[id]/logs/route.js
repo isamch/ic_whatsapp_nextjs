@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { campaigns, campaignLogs } from '@/lib/db/schema'
+import { eq, and, desc, count } from 'drizzle-orm'
 import { withAuth } from '@/lib/withAuth'
 import { ok, error } from '@/lib/response'
 
@@ -8,18 +10,23 @@ export const GET = withAuth(async (req, { params }) => {
   const page  = Number(searchParams.get('page')  || 1)
   const limit = Number(searchParams.get('limit') || 20)
 
-  const campaign = await prisma.campaign.findFirst({ where: { id: Number(id), userId: req.user.id } })
+  const campaign = await db.query.campaigns.findFirst({
+    where: and(eq(campaigns.id, Number(id)), eq(campaigns.userId, req.user.id))
+  })
   if (!campaign) return error('Not found', 404)
 
-  const [logs, total] = await Promise.all([
-    prisma.campaignLog.findMany({
-      where: { campaignId: Number(id) },
-      include: { contact: { select: { name: true, phone: true } } },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { sentAt: 'desc' }
+  const [list, totalRes] = await Promise.all([
+    db.query.campaignLogs.findMany({
+      where: eq(campaignLogs.campaignId, Number(id)),
+      with: {
+        contact: { columns: { name: true, phone: true } }
+      },
+      limit: limit,
+      offset: (page - 1) * limit,
+      orderBy: [desc(campaignLogs.sentAt)]
     }),
-    prisma.campaignLog.count({ where: { campaignId: Number(id) } })
+    db.select({ count: count() }).from(campaignLogs).where(eq(campaignLogs.campaignId, Number(id)))
   ])
-  return ok({ logs, total })
+  
+  return ok({ logs: list, total: totalRes[0].count })
 })

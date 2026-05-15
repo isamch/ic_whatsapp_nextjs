@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { refreshTokens, users } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/lib/jwt'
 import { ok, error } from '@/lib/response'
 
@@ -9,22 +11,31 @@ export async function POST(req) {
 
     const payload = verifyRefreshToken(refreshToken)
 
-    const stored = await prisma.refreshToken.findUnique({ where: { token: refreshToken } })
-    if (!stored || stored.expiresAt < new Date()) {
-      await prisma.refreshToken.deleteMany({ where: { token: refreshToken } })
+    const stored = await db.query.refreshTokens.findFirst({
+      where: eq(refreshTokens.token, refreshToken)
+    })
+    
+    if (!stored || new Date(stored.expiresAt) < new Date()) {
+      await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken))
       return error('Invalid refresh token', 401)
     }
 
-    const user = await prisma.user.findUnique({ where: { id: payload.id } })
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, payload.id)
+    })
+    
     if (!user || !user.isActive) return error('Unauthorized', 401)
 
-    await prisma.refreshToken.delete({ where: { token: refreshToken } })
+    await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken))
 
     const newAccessToken  = signAccessToken({ id: user.id, role: user.role })
     const newRefreshToken = signRefreshToken({ id: user.id })
 
-    await prisma.refreshToken.create({
-      data: { token: newRefreshToken, userId: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    await db.insert(refreshTokens).values({
+      token: newRefreshToken,
+      userId: user.id,
+      expiresAt: expiresAt
     })
 
     return ok({ accessToken: newAccessToken, refreshToken: newRefreshToken })

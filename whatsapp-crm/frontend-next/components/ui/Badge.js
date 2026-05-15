@@ -3,11 +3,12 @@ import { CheckCircle2Icon, XCircleIcon, HelpCircleIcon, PauseIcon, SquareIcon, F
 const variants = {
   valid:     { cls: 'bg-green-100 text-green-700',   Icon: CheckCircle2Icon, label: 'Valid' },
   invalid:   { cls: 'bg-red-100 text-red-700',       Icon: XCircleIcon,      label: 'Invalid' },
-  unknown:   { cls: 'bg-gray-100 text-gray-500',     Icon: HelpCircleIcon,   label: 'Unknown' },
+  unknown:   { cls: 'bg-gray-100 text-gray-500',     Icon: HelpCircleIcon,   label: 'Pending' },
   draft:     { cls: 'bg-gray-100 text-gray-600',     Icon: FileEditIcon,     label: 'Draft' },
   running:   { cls: 'bg-emerald-100 text-emerald-700', pulse: true,          label: 'Running' },
   completed: { cls: 'bg-blue-100 text-blue-700',     Icon: CheckCircle2Icon, label: 'Completed' },
   paused:    { cls: 'bg-amber-100 text-amber-700',   Icon: PauseIcon,        label: 'Paused' },
+  pending:   { cls: 'bg-gray-100 text-gray-600',     Icon: FileEditIcon,     label: 'Pending' },
   stopped:   { cls: 'bg-red-100 text-red-700',       Icon: SquareIcon,       label: 'Stopped' },
 }
 

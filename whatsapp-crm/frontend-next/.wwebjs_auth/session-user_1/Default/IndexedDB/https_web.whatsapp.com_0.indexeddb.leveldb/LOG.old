@@ -1,0 +1,51 @@
+2026/05/15-15:47:02.589 2738 Creating DB C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb since it was missing.
+2026/05/15-15:47:02.600 2738 Reusing MANIFEST C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/05/15-15:47:47.400 3bf4 Level-0 table #5: started
+2026/05/15-15:47:47.492 3bf4 Level-0 table #5: 1098050 bytes OK
+2026/05/15-15:47:47.495 3bf4 Delete type=0 #3
+2026/05/15-15:47:52.687 2f28 Level-0 table #7: started
+2026/05/15-15:47:52.786 2f28 Level-0 table #7: 1063084 bytes OK
+2026/05/15-15:47:52.788 2f28 Delete type=0 #4
+2026/05/15-15:47:53.104 3bf4 Compacting 1@1 + 1@2 files
+2026/05/15-15:47:53.301 3bf4 Generated table #8@1: 31477 keys, 1148317 bytes
+2026/05/15-15:47:53.302 3bf4 Compacted 1@1 + 1@2 files => 1148317 bytes
+2026/05/15-15:47:53.304 3bf4 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/05/15-15:47:53.305 3bf4 Delete type=2 #7
+2026/05/15-15:47:56.507 3bf4 Level-0 table #10: started
+2026/05/15-15:47:56.587 3bf4 Level-0 table #10: 1090905 bytes OK
+2026/05/15-15:47:56.589 3bf4 Delete type=2 #5
+2026/05/15-15:47:56.590 3bf4 Delete type=0 #6
+2026/05/15-15:47:56.600 3bf4 Compacting 1@1 + 1@2 files
+2026/05/15-15:47:56.799 3bf4 Generated table #11@1: 35673 keys, 1574349 bytes
+2026/05/15-15:47:56.800 3bf4 Compacted 1@1 + 1@2 files => 1574349 bytes
+2026/05/15-15:47:56.802 3bf4 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/05/15-15:47:56.803 3bf4 Delete type=2 #8
+2026/05/15-15:47:56.803 3bf4 Delete type=2 #10
+2026/05/15-15:48:02.815 2f28 Level-0 table #13: started
+2026/05/15-15:48:02.904 2f28 Level-0 table #13: 1400610 bytes OK
+2026/05/15-15:48:02.906 2f28 Delete type=0 #9
+2026/05/15-15:48:02.916 3bf4 Compacting 1@1 + 1@2 files
+2026/05/15-15:48:03.161 3bf4 Generated table #14@1: 35097 keys, 2194798 bytes
+2026/05/15-15:48:03.173 3bf4 Generated table #15@1: 1354 keys, 57917 bytes
+2026/05/15-15:48:03.174 3bf4 Compacted 1@1 + 1@2 files => 2252715 bytes
+2026/05/15-15:48:03.175 3bf4 compacted to: files[ 0 0 2 0 0 0 0 ]
+2026/05/15-15:48:03.175 3bf4 Delete type=2 #11
+2026/05/15-15:48:03.175 3bf4 Delete type=2 #13
+2026/05/15-15:48:21.357 2f28 Level-0 table #17: started
+2026/05/15-15:48:21.417 2f28 Level-0 table #17: 1109666 bytes OK
+2026/05/15-15:48:21.420 2f28 Delete type=0 #12
+2026/05/15-15:48:22.420 3bf4 Compacting 1@1 + 1@2 files
+2026/05/15-15:48:22.564 3bf4 Generated table #18@1: 28721 keys, 2188197 bytes
+2026/05/15-15:48:22.595 3bf4 Generated table #19@1: 19572 keys, 457531 bytes
+2026/05/15-15:48:22.595 3bf4 Compacted 1@1 + 1@2 files => 2645728 bytes
+2026/05/15-15:48:22.596 3bf4 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/05/15-15:48:22.596 3bf4 Delete type=2 #14
+2026/05/15-15:48:22.596 3bf4 Delete type=2 #17
+2026/05/15-15:48:32.761 3bf4 Level-0 table #21: started
+2026/05/15-15:48:32.825 3bf4 Level-0 table #21: 1109477 bytes OK
+2026/05/15-15:48:32.828 3bf4 Delete type=0 #16
+2026/05/15-15:52:43.405 3bf4 Compacting 1@1 + 2@2 files
+2026/05/15-15:52:43.635 3bf4 Generated table #22@1: 28653 keys, 2186867 bytes
+2026/05/15-15:52:43.739 3bf4 Generated table #23@1: 24630 keys, 655761 bytes
+2026/05/15-15:52:43.740 3bf4 Compacted 1@1 + 2@2 files => 2842628 bytes
+2026/05/15-15:52:43.741 3bf4 compacted to: files[ 0 0 3 0 0 0 0 ]

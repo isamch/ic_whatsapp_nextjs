@@ -52,13 +52,36 @@
 - [x] GET /api/whatsapp/qr
 - [x] GET /api/whatsapp/status
 - [x] POST /api/whatsapp/disconnect
+- [x] GET /api/whatsapp/conversations
+- [x] GET/POST /api/whatsapp/conversations/[chatId]/messages
+- [x] GET /api/stats
+- [x] POST /api/notifications/send
 
 ### Phase 4 — Frontend lib update
 - [x] lib/api.js — BASE_URL changed to /api
 - [x] lib/auth-api.js — BASE_URL changed to /api
 
 ## 🔲 Next
-- [ ] conversations API routes (inbox, send message)
-- [ ] admin notifications send route
-- [ ] dashboard stats route
-- [ ] Test all routes with npm run dev
+- [x] conversations API routes (inbox, send message)
+- [x] admin notifications send route
+- [x] dashboard stats route
+- [x] Test campaign routes (List, Details, Logs) - Fixed field mapping and rendering issues
+- [x] Fix global WhatsApp status parsing in AppContext
+- [x] Fix default contact status to Pending (was Valid)
+- [x] Fix campaign validation (templateId/listId were expecting 24-char hex)
+- [x] Fix campaign field mismatch (listId vs contactListId)
+- [x] Fix campaign control buttons visibility (pending vs draft)
+- [x] Implement CRM-based Conversations page with Search and Pagination
+- [x] Add "Sync from WhatsApp" feature to import contacts into DB
+- [x] Implement Pagination (Load More) for Contacts list (Removed per user request)
+- [x] Create dedicated WhatsAppContact table (Schema + Migration)
+- [x] Update WhatsApp Sync to use dedicated table and userId
+- [x] Fix: Restore missing WhatsappSession columns in Prisma schema
+- [x] Database Cleanup: Wiped all tables except User for a fresh start
+- [x] Automatic Sync: Auto-sync on page load and on WhatsApp connection
+- [x] Admin: Added "All WH Contacts" to view all users' contacts
+- [x] Fix: Admin Users page keys and role handling
+- [x] Feature: Multi-type Notifications (System, Alert, etc.)
+- [x] Fix: Admin single-user notification dispatch
+- [x] Admin: Restructured WH Contacts to User-based drill-down
+- [ ] Test other routes with npm run dev

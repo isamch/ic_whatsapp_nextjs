@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { notifications } from '@/lib/db/schema'
+import { eq, desc, count as drizzleCount } from 'drizzle-orm'
 import { withAuth } from '@/lib/withAuth'
 import { ok } from '@/lib/response'
 
@@ -7,14 +9,14 @@ export const GET = withAuth(async (req) => {
   const page  = Number(searchParams.get('page')  || 1)
   const limit = Number(searchParams.get('limit') || 20)
 
-  const [notifications, total] = await Promise.all([
-    prisma.notification.findMany({
-      where: { userId: req.user.id },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' }
-    }),
-    prisma.notification.count({ where: { userId: req.user.id } })
+  const [list, totalRes] = await Promise.all([
+    db.select().from(notifications)
+      .where(eq(notifications.userId, req.user.id))
+      .limit(limit)
+      .offset((page - 1) * limit)
+      .orderBy(desc(notifications.createdAt)),
+    db.select({ count: drizzleCount() }).from(notifications).where(eq(notifications.userId, req.user.id))
   ])
-  return ok({ notifications, total })
+  
+  return ok({ notifications: list, total: totalRes[0].count })
 })

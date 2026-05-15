@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { campaigns } from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { withAuth } from '@/lib/withAuth'
 import { ok, error } from '@/lib/response'
 import { getClient } from '@/lib/whatsapp-manager'
@@ -6,9 +8,16 @@ import { runCampaignJob } from '@/lib/campaign-runner'
 
 export const POST = withAuth(async (req, { params }) => {
   const { id } = await params
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: Number(id), userId: req.user.id },
-    include: { template: true, contactList: { include: { contacts: true } } }
+  const campaign = await db.query.campaigns.findFirst({
+    where: and(eq(campaigns.id, Number(id)), eq(campaigns.userId, req.user.id)),
+    with: {
+      template: true,
+      contactList: {
+        with: {
+          contacts: true
+        }
+      }
+    }
   })
   if (!campaign) return error('Not found', 404)
   if (campaign.status === 'running') return error('Already running')
@@ -16,7 +25,9 @@ export const POST = withAuth(async (req, { params }) => {
   const client = getClient(req.user.id)
   if (!client) return error('WhatsApp not connected', 400)
 
-  await prisma.campaign.update({ where: { id: Number(id) }, data: { status: 'running' } })
+  await db.update(campaigns)
+    .set({ status: 'running' })
+    .where(eq(campaigns.id, Number(id)))
 
   runCampaignJob(campaign, client)
 

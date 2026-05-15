@@ -2,12 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { SendIcon, BellIcon, UsersIcon, Loader2Icon } from 'lucide-react'
+import { 
+  SendIcon, BellIcon, UsersIcon, Loader2Icon, ShieldAlertIcon, 
+  InfoIcon, CheckCircleIcon, ZapIcon 
+} from 'lucide-react'
 import { useAlert } from '@/context/AlertContext'
 import api from '@/lib/api'
-import { getInbox } from '@/lib/notifications'
 import { getUsers } from '@/lib/users'
-import { validateSendNotification } from '@/lib/validations/notification/sendNotification.validation'
+
+const NOTIF_TYPES = [
+  { id: 'system', label: 'System Alert', icon: ZapIcon, color: 'text-amber-600', bg: 'bg-amber-50' },
+  { id: 'alert', label: 'Urgent/Danger', icon: ShieldAlertIcon, color: 'text-red-600', bg: 'bg-red-50' },
+  { id: 'success', label: 'Success/Update', icon: CheckCircleIcon, color: 'text-green-600', bg: 'bg-green-50' },
+  { id: 'private', label: 'General Info', icon: InfoIcon, color: 'text-blue-600', bg: 'bg-blue-50' },
+]
 
 export default function AdminNotificationsPage() {
   const [users, setUsers]         = useState([])
@@ -15,9 +23,9 @@ export default function AdminNotificationsPage() {
   const [recipient, setRecipient] = useState('all')
   const [subject, setSubject]     = useState('')
   const [body, setBody]           = useState('')
+  const [type, setType]           = useState('private')
   const [sending, setSending]     = useState(false)
   const [loading, setLoading]     = useState(true)
-  const [errors, setErrors]       = useState({})
   const { showAlert } = useAlert()
 
   useEffect(() => {
@@ -32,24 +40,24 @@ export default function AdminNotificationsPage() {
   }, [])
 
   const handleSend = async () => {
-    const errs = validateSendNotification({ subject: subject.trim(), body: body.trim(), recipientId: recipient !== 'all' ? recipient : undefined })
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    setErrors({})
+    if (!subject.trim() || !body.trim()) return showAlert('Subject and Message are required', 'error')
+    
     setSending(true)
     try {
       const payload = {
         subject: subject.trim(),
         body: body.trim(),
-        ...(recipient !== 'all' && { recipientId: recipient }),
+        type,
+        recipientId: recipient === 'all' ? null : recipient
       }
       const res = await api.post('/notifications', payload)
       setSent(prev => [res.data, ...prev])
       setSubject('')
       setBody('')
       setRecipient('all')
-      showAlert('Notification sent', 'success')
+      showAlert('Notification sent successfully', 'success')
     } catch (err) {
-      showAlert(err.message || 'Failed to send', 'error')
+      showAlert(err.response?.data?.message || 'Failed to send', 'error')
     } finally {
       setSending(false)
     }
@@ -57,85 +65,116 @@ export default function AdminNotificationsPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 h-full overflow-y-auto custom-scrollbar">
-      <div className="max-w-5xl w-full mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Broadcast Notifications</h1>
-          <p className="text-gray-500 mt-1">Send in-app alerts and updates to users.</p>
+      <div className="max-w-6xl w-full mx-auto">
+        <div className="mb-6 flex justify-between items-end">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Broadcast Notifications</h1>
+            <p className="text-gray-500 mt-1">Send in-app alerts and official updates to your users.</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Compose */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Compose Form */}
+          <div className="lg:col-span-5 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col sticky top-0">
             <div className="p-5 border-b border-gray-200 bg-gray-50 flex items-center">
-              <BellIcon className="w-5 h-5 text-blue-600 mr-2" />
+              <BellIcon className="w-5 h-5 text-indigo-600 mr-2" />
               <h2 className="font-semibold text-gray-900">Compose Message</h2>
             </div>
-            <div className="p-6 flex-1 flex flex-col space-y-5">
+            <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recipient</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Recipient</label>
                 <div className="relative">
                   <select value={recipient} onChange={e => setRecipient(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none bg-white appearance-none">
-                    <option value="all">All Users (Broadcast)</option>
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none bg-white appearance-none text-sm">
+                    <option value="all">Broadcast to All Users</option>
                     {users.map(u => (
-                      <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
+                      <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                     ))}
                   </select>
                   <UsersIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                <input type="text" value={subject} onChange={e => { setSubject(e.target.value); setErrors(p => ({ ...p, subject: '' })) }}
-                  placeholder="e.g., Scheduled Maintenance Notice"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none ${errors.subject ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
-                {errors.subject && <p className="text-xs text-red-500 mt-1">{errors.subject}</p>}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notification Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {NOTIF_TYPES.map(t => (
+                    <button 
+                      key={t.id}
+                      onClick={() => setType(t.id)}
+                      className={`flex items-center gap-2 p-2.5 border rounded-lg text-xs font-medium transition-all ${
+                        type === t.id ? `${t.bg} border-${t.color.split('-')[1]}-200 ${t.color} ring-1 ring-${t.color.split('-')[1]}-200` : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <t.icon className="w-3.5 h-3.5" />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex-1 flex flex-col">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message Body</label>
-                <textarea value={body} onChange={e => { setBody(e.target.value); setErrors(p => ({ ...p, body: '' })) }}
-                  placeholder="Type your notification message here..."
-                  className={`w-full flex-1 min-h-[150px] px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none resize-none ${errors.body ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
-                {errors.body && <p className="text-xs text-red-500 mt-1">{errors.body}</p>}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject</label>
+                <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
+                  placeholder="e.g., Update Available"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none text-sm" />
               </div>
-              <button disabled={!subject || !body || sending} onClick={handleSend}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50 cursor-pointer">
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Message Content</label>
+                <textarea value={body} onChange={e => setBody(e.target.value)}
+                  placeholder="What would you like to say?"
+                  className="w-full min-h-[120px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none resize-none text-sm" />
+              </div>
+
+              <button disabled={sending} onClick={handleSend}
+                className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:opacity-50 shadow-sm">
                 {sending ? <Loader2Icon className="w-4 h-4 mr-2 animate-spin" /> : <SendIcon className="w-4 h-4 mr-2" />}
-                Send Notification
+                Dispatch Notification
               </button>
             </div>
           </div>
 
-          {/* Sent History */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-gray-200 bg-gray-50">
-              <h2 className="font-semibold text-gray-900">Sent History</h2>
+          {/* History */}
+          <div className="lg:col-span-7 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[700px]">
+            <div className="p-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900">Recently Sent</h2>
+              <span className="text-xs text-gray-500">{sent.length} items</span>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-gray-100">
               {loading ? (
-                <div className="flex items-center justify-center py-12 text-gray-400">
-                  <Loader2Icon className="w-5 h-5 animate-spin" />
+                <div className="flex items-center justify-center py-20">
+                  <Loader2Icon className="w-6 h-6 animate-spin text-gray-300" />
                 </div>
               ) : sent.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-400">No notifications sent yet</div>
+                <div className="py-20 text-center text-sm text-gray-400 italic">No notification history yet</div>
               ) : (
-                <div className="divide-y divide-gray-100">
-                  {sent.map(notif => (
-                    <div key={notif._id} className="p-5 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-medium text-gray-900">{notif.subject}</h3>
-                        <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                sent.map(notif => {
+                  const t = NOTIF_TYPES.find(x => x.id === notif.type) || NOTIF_TYPES[3]
+                  return (
+                    <div key={notif.id} className="p-5 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                           <div className={`p-1.5 rounded-md ${t.bg}`}>
+                              <t.icon className={`w-3.5 h-3.5 ${t.color}`} />
+                           </div>
+                           <h3 className="font-semibold text-gray-900 text-sm">{notif.subject}</h3>
+                        </div>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap bg-gray-100 px-2 py-1 rounded">
                           {new Date(notif.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="text-xs text-blue-600 font-medium mb-2">
-                        To: {notif.isBroadcast ? 'All Users' : notif.recipientId?.name || 'Specific User'}
+                      <div className="flex items-center gap-2 mb-3">
+                         <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400">To:</span>
+                         <span className="text-[11px] font-medium text-gray-600 bg-gray-50 px-2 py-0.5 border border-gray-200 rounded">
+                            {notif.type === 'broadcast' ? 'Everyone' : 'Single User'}
+                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-2">{notif.body}</p>
+                      <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{notif.message}</p>
                     </div>
-                  ))}
-                </div>
+                  )
+                })
               )}
             </div>
           </div>

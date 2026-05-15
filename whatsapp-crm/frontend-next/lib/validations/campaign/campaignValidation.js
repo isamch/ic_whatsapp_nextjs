@@ -3,10 +3,10 @@ import Joi from 'joi'
 const campaignSchema = Joi.object({
   name:          Joi.string().trim().min(2).max(100).required()
     .messages({ 'string.min': 'Name must be at least 2 characters', 'any.required': 'Name is required', 'string.empty': 'Name is required' }),
-  templateId:    Joi.string().hex().length(24).required()
-    .messages({ 'any.required': 'Template is required', 'string.empty': 'Template is required' }),
-  listId:        Joi.string().hex().length(24).required()
-    .messages({ 'any.required': 'Contact list is required', 'string.empty': 'Contact list is required' }),
+  templateId:    Joi.number().integer().required()
+    .messages({ 'any.required': 'Template is required', 'number.base': 'Template is required' }),
+  listId:        Joi.number().integer().required()
+    .messages({ 'any.required': 'Contact list is required', 'number.base': 'Contact list is required' }),
   ratePerMinute: Joi.number().integer().min(1).max(60).default(10),
 })
 

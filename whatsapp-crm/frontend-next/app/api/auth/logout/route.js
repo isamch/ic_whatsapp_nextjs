@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { refreshTokens } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { ok, error } from '@/lib/response'
 
 export async function POST(req) {
@@ -6,7 +8,7 @@ export async function POST(req) {
     const { refreshToken } = await req.json()
 
     if (refreshToken) {
-      await prisma.refreshToken.deleteMany({ where: { token: refreshToken } })
+      await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken))
     }
 
     return ok({ message: 'Logged out' })

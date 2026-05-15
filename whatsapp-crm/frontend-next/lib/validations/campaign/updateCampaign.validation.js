@@ -3,10 +3,10 @@ import Joi from 'joi'
 const schema = Joi.object({
   name:          Joi.string().trim().min(2).max(100)
     .messages({ 'string.min': 'Name must be at least 2 characters', 'string.empty': 'Name is required' }),
-  templateId:    Joi.string().hex().length(24)
-    .messages({ 'string.empty': 'Template is required' }),
-  listId:        Joi.string().hex().length(24)
-    .messages({ 'string.empty': 'Contact list is required' }),
+  templateId:    Joi.number().integer()
+    .messages({ 'number.base': 'Template is required' }),
+  listId:        Joi.number().integer()
+    .messages({ 'number.base': 'Contact list is required' }),
   ratePerMinute: Joi.number().integer().min(1).max(60),
 }).min(1)
 

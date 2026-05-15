@@ -34,9 +34,11 @@ export default function CampaignsPage() {
     setLoading(true)
     try {
       const params = { limit: 100 }
-      if (tab !== 'all') params.status = tab
+      if (tab !== 'all') {
+        params.status = tab === 'draft' ? 'pending' : tab
+      }
       const res = await getCampaigns(params)
-      setCampaigns(res.data?.data || [])
+      setCampaigns(res.data?.campaigns || [])
     } catch {
       showAlert('Failed to load campaigns', 'error')
     } finally {
@@ -114,13 +116,13 @@ export default function CampaignsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filtered.map(campaign => {
-                    const progress = campaign.total > 0 ? campaign.sent / campaign.total * 100 : 0
-                    const failedPct = campaign.total > 0 ? campaign.failed / campaign.total * 100 : 0
+                    const progress = campaign.totalCount > 0 ? campaign.sentCount / campaign.totalCount * 100 : 0
+                    const failedPct = campaign.totalCount > 0 ? campaign.failedCount / campaign.totalCount * 100 : 0
                     return (
-                      <tr key={campaign._id} className="hover:bg-gray-50 transition-colors group cursor-pointer" onClick={() => setSelectedCampaign(campaign._id)}>
+                      <tr key={campaign.id} className="hover:bg-gray-50 transition-colors group cursor-pointer" onClick={() => setSelectedCampaign(campaign.id)}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{campaign.listId?.name || '—'}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{campaign.contactList?.name || '—'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap"><Badge status={campaign.status} /></td>
                         <td className="px-6 py-4 whitespace-nowrap w-48">
@@ -143,7 +145,7 @@ export default function CampaignsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className="text-green-600 font-medium">{campaign.sent}</span> / <span className="text-red-500">{campaign.failed}</span>
+                          <span className="text-green-600 font-medium">{campaign.sentCount}</span> / <span className="text-red-500">{campaign.failedCount}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {campaign.startedAt ? new Date(campaign.startedAt).toLocaleDateString() : campaign.scheduledAt ? new Date(campaign.scheduledAt).toLocaleDateString() : new Date(campaign.createdAt).toLocaleDateString()}
@@ -193,7 +195,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
   const fetchLogs = async () => {
     try {
       const res = await getCampaignLogs(campaignId)
-      setLogs(res.data?.data || [])
+      setLogs(res.data?.logs || [])
     } catch {}
   }
 
@@ -237,10 +239,16 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
   }
 
   if (loading) return <div className="flex items-center justify-center h-full text-gray-400"><Loader2Icon className="w-6 h-6 animate-spin" /></div>
-  if (!campaign) return null
+  if (!campaign) return (
+    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+      <AlertTriangleIcon className="w-12 h-12 mb-4 text-amber-500" />
+      <p className="text-lg font-medium">Campaign not found</p>
+      <button onClick={onBack} className="mt-4 text-whatsapp hover:underline">Back to Campaigns</button>
+    </div>
+  )
 
-  const sentPct   = campaign.total > 0 ? campaign.sent   / campaign.total * 100 : 0
-  const failedPct  = campaign.total > 0 ? campaign.failed / campaign.total * 100 : 0
+  const sentPct   = campaign.totalCount > 0 ? campaign.sentCount   / campaign.totalCount * 100 : 0
+  const failedPct  = campaign.totalCount > 0 ? campaign.failedCount / campaign.totalCount * 100 : 0
   const progress   = sentPct + failedPct
 
   const barColor =
@@ -249,7 +257,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
     campaign.status === 'paused'    ? 'bg-amber-400' :
     campaign.status === 'stopped'   ? 'bg-red-400' :
     'bg-gray-300'
-  const isDraft = campaign.status === 'draft'
+  const isDraft = ['draft', 'pending'].includes(campaign.status)
   const isRunning = campaign.status === 'running'
   const isPaused = campaign.status === 'paused'
   const isDone = ['completed', 'stopped'].includes(campaign.status)
@@ -283,9 +291,9 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
                 <Badge status={campaign.status} />
               </div>
               <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-400">
-                <span>{campaign.templateId?.name}</span>
+                <span>{campaign.template?.name}</span>
                 <span>•</span>
-                <span>{campaign.listId?.name} ({campaign.listId?.contactCount} contacts)</span>
+                <span>{campaign.contactList?.name} ({campaign.totalCount} contacts)</span>
                 <span>•</span>
                 <span>{campaign.ratePerMinute} msgs/min</span>
                 {campaign.startedAt && <><span>•</span><span>Started: {new Date(campaign.startedAt).toLocaleString()}</span></>}
@@ -385,7 +393,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
           <div>
             <div className="flex justify-between items-end mb-2">
               <span className="text-sm font-medium text-gray-600">Progress</span>
-              <span className="text-sm font-bold text-gray-900">{campaign.sent + campaign.failed} / {campaign.total} <span className="text-gray-400 font-normal">({Math.round(progress)}%)</span></span>
+              <span className="text-sm font-bold text-gray-900">{campaign.sentCount + campaign.failedCount} / {campaign.totalCount} <span className="text-gray-400 font-normal">({Math.round(progress)}%)</span></span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden mb-4">
               <div className="flex h-full">
@@ -396,9 +404,9 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
             <div className="grid grid-cols-4 gap-3">
               {[
                 { label: 'Status',  value: campaign.status,  cls: 'bg-gray-50 border-gray-100',   vCls: 'text-gray-700 capitalize text-base' },
-                { label: 'Sent',    value: campaign.sent,    cls: 'bg-green-50 border-green-100', vCls: 'text-green-700' },
-                { label: 'Failed',  value: campaign.failed,  cls: 'bg-red-50 border-red-100',     vCls: 'text-red-600' },
-                { label: 'Pending', value: Math.max(0, campaign.total - campaign.sent - campaign.failed), cls: 'bg-gray-50 border-gray-100', vCls: 'text-gray-900' },
+                { label: 'Sent',    value: campaign.sentCount,    cls: 'bg-green-50 border-green-100', vCls: 'text-green-700' },
+                { label: 'Failed',  value: campaign.failedCount,  cls: 'bg-red-50 border-red-100',     vCls: 'text-red-600' },
+                { label: 'Pending', value: Math.max(0, campaign.totalCount - campaign.sentCount - campaign.failedCount), cls: 'bg-gray-50 border-gray-100', vCls: 'text-gray-900' },
               ].map(({ label, value, cls, vCls }) => (
                 <div key={label} className={`rounded-lg p-4 border ${cls}`}>
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">{label}</p>
@@ -423,8 +431,8 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {logs.map(log => (
-                  <tr key={log._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-sm text-gray-900">{log.contactId?.name || '—'}</td>
+                  <tr key={log.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-3 text-sm text-gray-900">{log.contact?.name || '—'}</td>
                     <td className="px-6 py-3 text-sm text-gray-500 font-mono">{log.phone}</td>
                     <td className="px-6 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -475,8 +483,8 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
   const [lists, setLists]           = useState([])
   const [categories, setCategories] = useState([])
   const [name, setName]             = useState(campaign.name)
-  const [templateId, setTemplateId] = useState(campaign.templateId?._id || '')
-  const [listId, setListId]         = useState(campaign.listId?._id || '')
+  const [templateId, setTemplateId] = useState(campaign.templateId || '')
+  const [listId, setListId]         = useState(campaign.contactListId || '')
   const [rate, setRate]             = useState(campaign.ratePerMinute)
   const [saving, setSaving]         = useState(false)
   const [loadingData, setLoadingData] = useState(true)
@@ -485,7 +493,7 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
   useEffect(() => {
     Promise.all([getTemplates(), getLists(), getCategories()])
       .then(([tRes, lRes, cRes]) => {
-        setTemplates(tRes.data?.data || [])
+        setTemplates(tRes.data?.templates || [])
         setLists(lRes.data?.lists || [])
         setCategories(cRes.data?.categories || [])
       })
@@ -499,7 +507,7 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
     setErrors({})
     setSaving(true)
     try {
-      await updateCampaign(campaign._id, { name: name.trim(), templateId, listId, ratePerMinute: rate })
+      const res = await updateCampaign(campaign.id, { name: name.trim(), templateId, contactListId: listId, ratePerMinute: rate })
       showAlert('Campaign updated', 'success')
       onSaved()
     } catch (err) {
@@ -533,7 +541,7 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
                   <select value={templateId} onChange={e => { setTemplateId(e.target.value); setErrors(p => ({ ...p, templateId: '' })) }}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none bg-white ${errors.templateId ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}>
                     <option value="">Choose a template...</option>
-                    {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                    {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                   {errors.templateId && <p className="text-xs text-red-500 mt-1">{errors.templateId}</p>}
                 </div>
@@ -569,7 +577,7 @@ function ListSelect({ lists, categories, value, onChange }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
-  const selected = lists.find(l => l._id === value)
+  const selected = lists.find(l => l.id === value)
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -579,10 +587,10 @@ function ListSelect({ lists, categories, value, onChange }) {
 
   const grouped = categories.map(cat => ({
     ...cat,
-    items: lists.filter(l => l.categoryId?.toString() === cat._id?.toString())
+    items: lists.filter(l => l.categoryId?.toString() === cat.id?.toString())
   })).filter(g => g.items.length)
 
-  const uncategorized = lists.filter(l => !l.categoryId || !categories.find(c => c._id?.toString() === l.categoryId?.toString()))
+  const uncategorized = lists.filter(l => !l.categoryId || !categories.find(c => c.id?.toString() === l.categoryId?.toString()))
 
   return (
     <div ref={ref} className="relative">
@@ -603,14 +611,14 @@ function ListSelect({ lists, categories, value, onChange }) {
           </div>
 
           {grouped.map(group => (
-            <div key={group._id}>
+            <div key={group.id}>
               <div className="px-3 py-1 text-[10px] font-semibold text-gray-400/70 uppercase tracking-widest bg-gray-50/80 border-y border-gray-100">
                 {group.name}
               </div>
               {group.items.map(l => (
-                <div key={l._id} onClick={() => { onChange(l._id); setOpen(false) }}
+                <div key={l.id} onClick={() => { onChange(l.id); setOpen(false) }}
                   className={`px-4 py-2 text-sm cursor-pointer flex items-center justify-between hover:bg-green-50 hover:text-whatsapp transition-colors ${
-                    value === l._id ? 'bg-green-50 text-whatsapp font-medium' : 'text-gray-700'
+                    value === l.id ? 'bg-green-50 text-whatsapp font-medium' : 'text-gray-700'
                   }`}>
                   <span>{l.name}</span>
                   <span className="text-xs text-gray-400">{l.contactCount} contacts</span>
@@ -620,9 +628,9 @@ function ListSelect({ lists, categories, value, onChange }) {
           ))}
 
           {uncategorized.map(l => (
-            <div key={l._id} onClick={() => { onChange(l._id); setOpen(false) }}
+            <div key={l.id} onClick={() => { onChange(l.id); setOpen(false) }}
               className={`px-4 py-2 text-sm cursor-pointer flex items-center justify-between hover:bg-green-50 hover:text-whatsapp transition-colors ${
-                value === l._id ? 'bg-green-50 text-whatsapp font-medium' : 'text-gray-700'
+                value === l.id ? 'bg-green-50 text-whatsapp font-medium' : 'text-gray-700'
               }`}>
               <span>{l.name}</span>
               <span className="text-xs text-gray-400">{l.contactCount} contacts</span>
@@ -649,7 +657,7 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
   useEffect(() => {
     Promise.all([getTemplates(), getLists(), getCategories()])
       .then(([tRes, lRes, cRes]) => {
-        setTemplates(tRes.data?.data || [])
+        setTemplates(tRes.data?.templates || [])
         setLists(lRes.data?.lists || [])
         setCategories(cRes.data?.categories || [])
       })
@@ -663,7 +671,7 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
     setErrors({})
     setSaving(true)
     try {
-      await createCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
+      await createCampaign({ name: name.trim(), templateId, contactListId: listId, ratePerMinute: rate })
       showAlert('Campaign saved', 'success')
       onCreated()
     } catch (err) {
@@ -704,7 +712,7 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
                   <select value={templateId} onChange={e => { setTemplateId(e.target.value); setErrors(p => ({ ...p, templateId: '' })) }}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none bg-white ${errors.templateId ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}>
                     <option value="">Choose a template...</option>
-                    {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                    {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                   {errors.templateId && <p className="text-xs text-red-500 mt-1">{errors.templateId}</p>}
                 </div>

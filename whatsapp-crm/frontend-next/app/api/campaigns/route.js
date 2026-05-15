@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { campaigns, contacts } from '@/lib/db/schema'
+import { eq, and, desc, count } from 'drizzle-orm'
 import { withAuth } from '@/lib/withAuth'
 import { ok, created, error } from '@/lib/response'
 
@@ -8,34 +10,42 @@ export const GET = withAuth(async (req) => {
   const limit  = Number(searchParams.get('limit')  || 20)
   const status = searchParams.get('status')
 
-  const [campaigns, total] = await Promise.all([
-    prisma.campaign.findMany({
-      where: { userId: req.user.id, ...(status && { status }) },
-      include: { template: { select: { name: true } }, contactList: { select: { name: true } } },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' }
+  const whereClause = status 
+    ? and(eq(campaigns.userId, req.user.id), eq(campaigns.status, status))
+    : eq(campaigns.userId, req.user.id)
+
+  const [list, totalRes] = await Promise.all([
+    db.query.campaigns.findMany({
+      where: whereClause,
+      with: {
+        template: { columns: { name: true } },
+        contactList: { columns: { name: true } }
+      },
+      limit: limit,
+      offset: (page - 1) * limit,
+      orderBy: [desc(campaigns.createdAt)]
     }),
-    prisma.campaign.count({ where: { userId: req.user.id } })
+    db.select({ count: count() }).from(campaigns).where(whereClause)
   ])
-  return ok({ campaigns, total })
+  
+  return ok({ campaigns: list, total: totalRes[0].count })
 })
 
 export const POST = withAuth(async (req) => {
-  const { name, templateId, contactListId, scheduledAt } = await req.json()
+  const { name, templateId, contactListId } = await req.json()
   if (!name || !templateId || !contactListId) return error('name, templateId and contactListId are required')
 
-  const totalCount = await prisma.contact.count({ where: { contactListId: Number(contactListId) } })
+  const totalRes = await db.select({ count: count() })
+    .from(contacts)
+    .where(eq(contacts.contactListId, Number(contactListId)))
 
-  const campaign = await prisma.campaign.create({
-    data: {
-      name,
-      templateId: Number(templateId),
-      contactListId: Number(contactListId),
-      userId: req.user.id,
-      totalCount,
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : null
-    }
-  })
-  return created(campaign)
+  const [campaign] = await db.insert(campaigns).values({
+    name,
+    templateId: Number(templateId),
+    contactListId: Number(contactListId),
+    userId: req.user.id,
+    totalCount: totalRes[0].count
+  }).returning()
+
+  return created({ campaign })
 })

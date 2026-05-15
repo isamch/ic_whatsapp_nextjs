@@ -25,14 +25,14 @@ export default function TemplatesPage() {
 
   useEffect(() => {
     getTemplates(1, 100)
-      .then(res => setTemplates(res.data?.data || []))
+      .then(res => setTemplates(res.data?.templates || []))
       .catch(() => showAlert('Failed to load templates', 'error'))
       .finally(() => setLoading(false))
   }, [])
 
   const filteredTemplates = templates.filter(
-    t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         t.body.toLowerCase().includes(searchQuery.toLowerCase())
+    t => t?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         t?.body?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleSelectTemplate = (template) => {
@@ -45,8 +45,8 @@ export default function TemplatesPage() {
   const DRAFT_ID = '__draft__'
 
   const handleNewTemplate = () => {
-    const draft = { _id: DRAFT_ID, name: 'Untitled Template', body: '', variables: [], createdAt: new Date().toISOString() }
-    setTemplates(prev => prev.some(t => t._id === DRAFT_ID) ? prev : [draft, ...prev])
+    const draft = { id: DRAFT_ID, name: 'Untitled Template', body: '', variables: [], createdAt: new Date().toISOString() }
+    setTemplates(prev => prev.some(t => t.id === DRAFT_ID) ? prev : [draft, ...prev])
     setSelectedTemplate(draft)
     setName('Untitled Template')
     setBody('')
@@ -54,7 +54,7 @@ export default function TemplatesPage() {
   }
 
   const handleCancel = () => {
-    setTemplates(prev => prev.filter(t => t._id !== DRAFT_ID))
+    setTemplates(prev => prev.filter(t => t.id !== DRAFT_ID))
     setIsEditing(false)
     setSelectedTemplate(null)
     setName('')
@@ -63,7 +63,7 @@ export default function TemplatesPage() {
   }
 
   const handleSave = async () => {
-    const errs = selectedTemplate && selectedTemplate._id !== DRAFT_ID
+    const errs = selectedTemplate && selectedTemplate.id !== DRAFT_ID
       ? validateUpdateTemplate({ name: name.trim(), body: body.trim() })
       : validateCreateTemplate({ name: name.trim(), body: body.trim() })
     if (Object.keys(errs).length) { setErrors(errs); return }
@@ -72,14 +72,14 @@ export default function TemplatesPage() {
     try {
       const finalName = name.trim()
       const finalBody = body.trim()
-      if (selectedTemplate && selectedTemplate._id !== DRAFT_ID) {
-        const res = await updateTemplate(selectedTemplate._id, { name: finalName, body: finalBody })
-        setTemplates(prev => prev.map(t => t._id === selectedTemplate._id ? res.data.template : t))
+      if (selectedTemplate && selectedTemplate.id !== DRAFT_ID) {
+        const res = await updateTemplate(selectedTemplate.id, { name: finalName, body: finalBody })
+        setTemplates(prev => prev.map(t => t.id === selectedTemplate.id ? res.data.template : t))
         setSelectedTemplate(res.data.template)
         showAlert('Template updated', 'success')
       } else {
         const res = await createTemplate({ name: finalName, body: finalBody })
-        setTemplates(prev => prev.map(t => t._id === DRAFT_ID ? res.data.template : t))
+        setTemplates(prev => prev.map(t => t.id === DRAFT_ID ? res.data.template : t))
         setSelectedTemplate(res.data.template)
         showAlert('Template created', 'success')
       }
@@ -104,9 +104,9 @@ export default function TemplatesPage() {
 
   const handleDeleteConfirm = async () => {
     try {
-      await deleteTemplate(deleteTarget._id)
-      setTemplates(prev => prev.filter(t => t._id !== deleteTarget._id))
-      if (selectedTemplate?._id === deleteTarget._id) handleCancel()
+      await deleteTemplate(deleteTarget.id)
+      setTemplates(prev => prev.filter(t => t.id !== deleteTarget.id))
+      if (selectedTemplate?.id === deleteTarget.id) handleCancel()
       showAlert('Template deleted', 'success')
     } catch {
       showAlert('Failed to delete', 'error')
@@ -157,9 +157,9 @@ export default function TemplatesPage() {
           ) : (
             filteredTemplates.map(template => (
               <div
-                key={template._id}
+                key={template.id}
                 onClick={() => handleSelectTemplate(template)}
-                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${selectedTemplate?._id === template._id ? 'bg-green-50 border-l-4 border-l-whatsapp' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}
+                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${selectedTemplate?.id === template.id ? 'bg-green-50 border-l-4 border-l-whatsapp' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <h3 className="font-medium text-gray-900">{template.name}</h3>
@@ -219,7 +219,7 @@ export default function TemplatesPage() {
                     onChange={e => {
                       setName(e.target.value)
                       setErrors(p => ({ ...p, name: '' }))
-                      setTemplates(prev => prev.map(t => t._id === selectedTemplate?._id ? { ...t, name: e.target.value } : t))
+                      setTemplates(prev => prev.map(t => t.id === selectedTemplate?.id ? { ...t, name: e.target.value } : t))
                     }}
                   />
                   {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}

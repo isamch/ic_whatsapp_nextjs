@@ -43,3 +43,4 @@ export const importContacts = (listId, file) => {
     return data
   })
 }
+export const syncContacts = () => api.post('/whatsapp/sync')
