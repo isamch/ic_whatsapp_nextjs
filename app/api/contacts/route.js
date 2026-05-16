@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
-import { contacts } from '@/lib/db/schema'
-import { eq, count } from 'drizzle-orm'
+import { contacts, contactLists } from '@/lib/db/schema'
+import { eq, and, count } from 'drizzle-orm'
 import { withAuth } from '@/lib/withAuth'
 import { ok, created, error } from '@/lib/response'
 
@@ -10,6 +10,13 @@ export const GET = withAuth(async (req) => {
   const page   = Number(searchParams.get('page')  || 1)
   const limit  = Number(searchParams.get('limit') || 50)
   if (!listId) return error('listId is required')
+
+  // Verify ownership
+  const [listOwner] = await db.select()
+    .from(contactLists)
+    .where(and(eq(contactLists.id, Number(listId)), eq(contactLists.userId, req.user.id)))
+  
+  if (!listOwner) return error('Unauthorized or list not found', 403)
 
   const [list, totalRes] = await Promise.all([
     db.select().from(contacts)
@@ -25,12 +32,20 @@ export const GET = withAuth(async (req) => {
 export const POST = withAuth(async (req) => {
   const { name, phone, notes, contactListId } = await req.json()
   if (!name || !phone || !contactListId) return error('name, phone and contactListId are required')
-  console.log('[API/Contacts] Creating contact:', { name, phone, contactListId })
+
+  // Verify ownership
+  const [listOwner] = await db.select()
+    .from(contactLists)
+    .where(and(eq(contactLists.id, Number(contactListId)), eq(contactLists.userId, req.user.id)))
+  
+  if (!listOwner) return error('Unauthorized or list not found', 403)
+
   const [contact] = await db.insert(contacts).values({ 
     name, 
     phone, 
     notes, 
-    contactListId: Number(contactListId)
+    contactListId: Number(contactListId),
+    updatedAt: new Date()
   }).returning()
   return created({ contact })
 })
