@@ -20,7 +20,7 @@ RUN npm install
 COPY . .
 
 # Build the Next.js app
-RUN npm run build
+RUN DATABASE_URL="postgresql://dummy:dummy@dummy.neon.tech/neondb?sslmode=require" npm run build
 
 # Start the application
 ENV PORT=8080
