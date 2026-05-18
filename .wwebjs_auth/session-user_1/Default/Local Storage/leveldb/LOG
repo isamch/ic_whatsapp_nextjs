@@ -1,3 +1,2 @@
-2026/05/16-00:21:51.957 4b80 Reusing MANIFEST C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/16-00:21:51.974 4b80 Recovering log #4
-2026/05/16-00:21:51.988 4b80 Reusing old log C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\Local Storage\leveldb/000004.log 
+2026/05/18-11:32:50.413 4ad4 Creating DB C:\ic_whatsapp_nextjs\.wwebjs_auth\session-user_1\Default\Local Storage\leveldb since it was missing.
+2026/05/18-11:32:50.574 4ad4 Reusing MANIFEST C:\ic_whatsapp_nextjs\.wwebjs_auth\session-user_1\Default\Local Storage\leveldb/MANIFEST-000001

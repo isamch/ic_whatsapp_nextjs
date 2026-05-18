@@ -1,3 +1,2 @@
-2026/05/16-00:21:51.711 5458 Reusing MANIFEST C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\Site Characteristics Database/MANIFEST-000001
-2026/05/16-00:21:51.716 5458 Recovering log #3
-2026/05/16-00:21:51.716 5458 Reusing old log C:\ic_whatsapp_nextjs\whatsapp-crm\frontend-next\.wwebjs_auth\session-user_1\Default\Site Characteristics Database/000003.log 
+2026/05/18-11:32:49.528 3ab8 Creating DB C:\ic_whatsapp_nextjs\.wwebjs_auth\session-user_1\Default\Site Characteristics Database since it was missing.
+2026/05/18-11:32:49.597 3ab8 Reusing MANIFEST C:\ic_whatsapp_nextjs\.wwebjs_auth\session-user_1\Default\Site Characteristics Database/MANIFEST-000001
